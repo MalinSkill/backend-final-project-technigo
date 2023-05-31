@@ -1,4 +1,4 @@
-import express from "express";
+import express, { response } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import crypto from "crypto";
@@ -89,7 +89,7 @@ const userPostSchema = new mongoose.Schema({
 const UserPost = mongoose.model("Userpost", userPostSchema);
 
 // Authenticate the user
-const AuthenticateUser = async (req, res, next) => {
+const authenticateUser = async (req, res, next) => {
   const accessToken = req.header("Authorization");
   try {
     const user = await User.findOne({ accessToken: accessToken });
@@ -172,6 +172,44 @@ app.post("/login", async (req, res) => {
     }
   } catch (e) {
     res.status(500).json({
+      success: false,
+      response: e
+    })
+  }
+});
+
+// Get all posts from all users
+app.get("/surfposts", async (req, res) => {
+  try {
+    const surferPosts = await UserPost.find().sort({ createdAt: 'desc' });
+    res.status(200).json({
+      success: true,
+      response: surferPosts
+    })
+  } catch (e) {
+    res.status(400).json({
+      success: false,
+      response: e
+    })
+  }
+})
+
+// Post a single recommentdation
+app.post("/surfposts", authenticateUser);
+app.post("/surfposts", async (req, res) => {
+  const { headline, location, message } = req.body;
+  const accessToken = req.header("Authorization");
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const surferposts = await new UserPost({ headline: headline, location: location, message: message, createdBy: user._id }).save();
+    if (surferposts) {
+      res.status(201).json({
+        success: true,
+        response: surferposts
+      })
+    }
+  } catch (e) {
+    res.status(400).json({
       success: false,
       response: e
     })
