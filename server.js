@@ -40,7 +40,8 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: true
+    required: true,
+    unique: true
   },
   accessToken: {
     type: String,
@@ -111,6 +112,70 @@ const AuthenticateUser = async (req, res, next) => {
 // Start defining your routes here
 app.get("/", (req, res) => {
   res.json(listEndpoints(app));
+});
+
+// Registration route
+app.post("/register", async (req, res) => {
+  const { username, password, email } = req.body;
+
+  // Perform email validation  
+  const emailRegex = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/i;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({
+      success: false,
+      response: 'Invalid email adress'
+    });
+  }
+  try {
+    const salt = bcrypt.genSaltSync();
+    const newUser = await new User({
+      username: username,
+      password: bcrypt.hashSync(password, salt),
+      email: email
+    }).save();
+    res.status(201).json({
+      success: true,
+      response: {
+        username: newUser.username,
+        email: newUser.email,
+        id: newUser._id,
+        accessToken: newUser.accessToken
+      }
+    })
+  } catch (e) {
+    res.status(400).json({
+      success: false,
+      response: e
+    })
+  }
+});
+
+// Login route
+app.post("/login", async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await User.findOne({ username: username })
+    if (user && bcrypt.compareSync(password, user.password)) {
+      res.status(200).json({
+        success: true,
+        response: {
+          username: user.username,
+          id: user._id,
+          accessToken: user.accessToken
+        }
+      })
+    } else {
+      res.status(401).json({
+        success: false,
+        response: "Credentials do not match"
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    })
+  }
 });
 
 // Start the server
