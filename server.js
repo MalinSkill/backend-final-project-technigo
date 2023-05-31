@@ -216,6 +216,49 @@ app.post("/surfposts", async (req, res) => {
   }
 });
 
+// endpoint for liking and unliking a post
+app.patch("/surfposts/:surfPostId/like", authenticateUser);
+app.patch("/surfposts/:surfPostId/like", async (req, res) => {
+  const { surfPostId } = req.params;
+  const accessToken = req.header("Authorization")
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const SpecificItem = await UserPost.findById(surfPostId);
+    console.log(SpecificItem)
+    const likedByArray = SpecificItem.likedBy;
+    console.log("array of id's that liked it", likedByArray)
+    const UserExist = likedByArray.find(userId => userId.toString() === user._id.toString());
+    console.log("User found", UserExist)
+
+    if (UserExist) {
+      await UserPost.findByIdAndUpdate(surfPostId,
+        {
+          $inc: { numOfLikes: -1 },
+          $pull: { likedBy: user._id }
+        },
+      )
+    } else {
+      await UserPost.findByIdAndUpdate(surfPostId,
+        {
+          $inc: { numOfLikes: 1 },
+          $push: { likedBy: user._id }
+        });
+    }
+
+    const LikedItem = await UserPost.findById(surfPostId)
+
+    res.status(201).json({
+      success: true,
+      response: LikedItem
+    })
+  } catch (e) {
+    res.status(400).json({
+      success: false,
+      response: e
+    })
+  }
+});
+
 // Start the server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
