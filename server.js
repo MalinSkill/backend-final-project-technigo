@@ -216,6 +216,34 @@ app.post("/surfposts", async (req, res) => {
   }
 });
 
+// endpoint for user's posts
+app.get("/mysurfposts", authenticateUser);
+app.get("/mysurfposts", async (req, res) => {
+  const accessToken = req.header("Authorization");
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const mySurferPosts = await UserPost.find({ createdBy: user._id });
+    if (mySurferPosts.length) {
+      res.status(200).json({
+        success: true,
+        response: mySurferPosts
+      })
+    } else {
+      res.status(404).json({
+        success: false,
+        response: "No posts found from this creator."
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    })
+  }
+});
+
+
+
 // endpoint for liking and unliking a post
 app.patch("/surfposts/:surfPostId/like", authenticateUser);
 app.patch("/surfposts/:surfPostId/like", async (req, res) => {
@@ -224,11 +252,8 @@ app.patch("/surfposts/:surfPostId/like", async (req, res) => {
   try {
     const user = await User.findOne({ accessToken: accessToken });
     const SpecificItem = await UserPost.findById(surfPostId);
-    console.log(SpecificItem)
     const likedByArray = SpecificItem.likedBy;
-    console.log("array of id's that liked it", likedByArray)
     const UserExist = likedByArray.find(userId => userId.toString() === user._id.toString());
-    console.log("User found", UserExist)
 
     if (UserExist) {
       await UserPost.findByIdAndUpdate(surfPostId,
@@ -258,6 +283,47 @@ app.patch("/surfposts/:surfPostId/like", async (req, res) => {
     })
   }
 });
+
+// endpoint for saving post as fav and removing from saved
+app.patch("/surfposts/:surfPostId/addfav", authenticateUser);
+app.patch("/surfposts/:surfPostId/addfav", async (req, res) => {
+  const { surfPostId } = req.params;
+  const accessToken = req.header("Authorization")
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const SpecificItem = await UserPost.findById(surfPostId);
+    console.log(SpecificItem)
+    const favArray = SpecificItem.savedFavBy;
+    const UserExist = favArray.find(userId => userId.toString() === user._id.toString());
+
+    if (UserExist) {
+      await UserPost.findByIdAndUpdate(surfPostId,
+        {
+          $pull: { savedFavBy: user._id }
+        },
+      )
+    } else {
+      await UserPost.findByIdAndUpdate(surfPostId,
+        {
+          $push: { savedFavBy: user._id }
+        });
+    }
+
+    const SavedItem = await UserPost.findById(surfPostId)
+
+    res.status(201).json({
+      success: true,
+      response: SavedItem
+    })
+  } catch (e) {
+    res.status(400).json({
+      success: false,
+      response: e
+    })
+  }
+});
+
+
 
 // Start the server
 app.listen(port, () => {
