@@ -242,7 +242,32 @@ app.get("/mysurfposts", async (req, res) => {
   }
 });
 
+// endpoint for user's saved favourites
+app.get("/myfavsurfposts", authenticateUser);
+app.get("/myfavsurfposts", async (req, res) => {
+  const accessToken = req.header("Authorization");
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const userFavPosts = await UserPost.find({ savedFavBy: user._id });
 
+    if (userFavPosts.length) {
+      res.status(200).json({
+        success: true,
+        response: userFavPosts
+      })
+    } else {
+      res.status(404).json({
+        success: false,
+        response: "No favourites saved."
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    })
+  }
+});
 
 // endpoint for liking and unliking a post
 app.patch("/surfposts/:surfPostId/like", authenticateUser);
@@ -292,7 +317,7 @@ app.patch("/surfposts/:surfPostId/addfav", async (req, res) => {
   try {
     const user = await User.findOne({ accessToken: accessToken });
     const SpecificItem = await UserPost.findById(surfPostId);
-    console.log(SpecificItem)
+
     const favArray = SpecificItem.savedFavBy;
     const UserExist = favArray.find(userId => userId.toString() === user._id.toString());
 
