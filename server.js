@@ -123,7 +123,7 @@ app.post("/register", async (req, res) => {
   if (!emailRegex.test(email)) {
     return res.status(400).json({
       success: false,
-      response: 'Invalid email adress'
+      response: 'Invalid email address'
     });
   }
   try {
