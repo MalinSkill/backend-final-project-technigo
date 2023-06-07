@@ -1,6 +1,6 @@
 import express from "express";
 const router = express.Router()
-import mongoose from "mongoose";
+import mongoose, { trusted } from "mongoose";
 import authenticateUser from "../Middlewares/middlewares";
 import User from '../Models/user';
 import UserPost from "../Models/surfpost";
@@ -202,5 +202,39 @@ router.delete("/surfposts/:surfPostId/delete", authenticateUser, async (req, res
   }
 });
 
+// endpoint for updating a post this can be done by the user who created it
+router.patch("/surfposts/:surfPostId/update", authenticateUser, async (req, res) => {
+  const { surfPostId } = req.params;
+  const accessToken = req.header("Authorization");
+  const { message } = req.body;
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const itemToUpdate = await UserPost.findOneAndUpdate(
+      // first parameter to find correct post
+      { _id: surfPostId, createdBy: user._id, },
+      // second parameter with the properties to update
+      { message },
+      // third parameter for the option to return the updated object
+      { new: true }
+    );
+
+    if (itemToUpdate) {
+      res.status(200).json({
+        success: true,
+        response: itemToUpdate
+      })
+    } else {
+      res.status(404).json({
+        success: false,
+        response: "Could not find post"
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    })
+  }
+});
 
 export default router;
