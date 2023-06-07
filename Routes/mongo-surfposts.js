@@ -174,4 +174,33 @@ router.patch("/surfposts/:surfPostId/addfav", authenticateUser, async (req, res)
   }
 });
 
+// endpoint for deleting a post this can be done by the user who created it
+router.delete("/surfposts/:surfPostId/delete", authenticateUser, async (req, res) => {
+  const { surfPostId } = req.params;
+  const accessToken = req.header("Authorization");
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    const itemToDelete = await UserPost.findOneAndDelete({ _id: surfPostId, createdBy: user._id });
+
+    if (itemToDelete) {
+      // went with 200 staus instead of 204, to be able to show the response text     
+      res.status(200).json({
+        success: true,
+        response: "Item deleted succesfully"
+      })
+    } else {
+      res.status(404).json({
+        success: false,
+        response: "Could not find post"
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    })
+  }
+});
+
+
 export default router;
