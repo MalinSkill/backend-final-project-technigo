@@ -12,8 +12,20 @@ mongoose.Promise = Promise;
 // Get all posts from all users
 router.get("/surfposts", async (req, res) => {
   try {
-    const { level, location } = req.query
-    let surferPosts = await UserPost.find().sort({ createdAt: 'desc' });
+    const { level, location, sort } = req.query
+    // create variables with the default sort values
+    let sortByPropery = 'CreatedAt';
+    let sortDirection = 'desc';
+
+    // check if sort query parameter is provided 
+    if (sort === 'likesDesc') {
+      sortByPropery = 'numOfLikes';
+      sortDirection = 'desc';
+    } else if (sort === 'likesAsce') {
+      sortByPropery = 'numOfLikes';
+      sortDirection = 'asc';
+    }
+    let surferPosts = await UserPost.find().sort({ [sortByPropery]: sortDirection });
 
     let filteredPosts = surferPosts;
 
@@ -73,8 +85,18 @@ router.post("/surfposts", authenticateUser, async (req, res) => {
 router.get("/mysurfposts", authenticateUser, async (req, res) => {
   const accessToken = req.header("Authorization");
   try {
+    const { sort } = req.query
+    // create variable with the default sort value
+    let sortDirection = 'desc';
+
+    // check if sort query parameter is provided 
+    if (sort === 'createdAsce') {
+      sortDirection = 'asc';
+    }
+
     const user = await User.findOne({ accessToken: accessToken });
-    const mySurferPosts = await UserPost.find({ createdBy: user._id });
+    const mySurferPosts = await UserPost.find({ createdBy: user._id }).sort({ createdAt: sortDirection });
+
     if (mySurferPosts.length) {
       res.status(200).json({
         success: true,
@@ -98,18 +120,24 @@ router.get("/mysurfposts", authenticateUser, async (req, res) => {
 router.get("/myfavsurfposts", authenticateUser, async (req, res) => {
   const accessToken = req.header("Authorization");
   try {
+    const { location } = req.query;
     const user = await User.findOne({ accessToken: accessToken });
     const userFavPosts = await UserPost.find({ savedFavBy: user._id });
+    let filteredPosts = userFavPosts;
 
-    if (userFavPosts.length) {
+    if (location) {
+      filteredPosts = filteredPosts.filter(post => post.location === location.toLowerCase());
+    }
+
+    if (filteredPosts.length) {
       res.status(200).json({
         success: true,
-        response: userFavPosts
+        response: filteredPosts
       })
     } else {
       res.status(404).json({
         success: false,
-        response: "No favourites saved."
+        response: "No favourites found"
       })
     }
   } catch (e) {
