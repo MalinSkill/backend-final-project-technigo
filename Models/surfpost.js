@@ -32,6 +32,11 @@ const userPostSchema = new mongoose.Schema({
   savedFavBy: {
     type: [String],
     default: []
+  },
+  level: {
+    type: String,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    required: true
   }
 });
 

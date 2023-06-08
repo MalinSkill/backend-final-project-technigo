@@ -12,10 +12,20 @@ mongoose.Promise = Promise;
 // Get all posts from all users
 router.get("/surfposts", async (req, res) => {
   try {
-    const surferPosts = await UserPost.find().sort({ createdAt: 'desc' });
+    const { level, location } = req.query
+    let surferPosts = await UserPost.find().sort({ createdAt: 'desc' });
+
+    let filteredPosts = surferPosts;
+
+    if (level) {
+      filteredPosts = filteredPosts.filter(post => post.level === level);
+    }
+    if (location) {
+      filteredPosts = filteredPosts.filter(post => post.location === location.toLowerCase());
+    }
     res.status(200).json({
       success: true,
-      response: surferPosts
+      response: filteredPosts
     })
   } catch (e) {
     res.status(400).json({
@@ -27,11 +37,24 @@ router.get("/surfposts", async (req, res) => {
 
 // Post a single recommentdation
 router.post("/surfposts", authenticateUser, async (req, res) => {
-  const { headline, location, message } = req.body;
+  const { headline, location, message, level } = req.body;
   const accessToken = req.header("Authorization");
+  // check to see if value of level is valid
+  if (level && !['beginner', 'intermediate', 'advanced'].includes(level)) {
+    return res.status(400).json({
+      success: false,
+      response: 'Invalid level value'
+    });
+  }
   try {
     const user = await User.findOne({ accessToken: accessToken });
-    const surferposts = await new UserPost({ headline: headline, location: location, message: message, createdBy: user._id }).save();
+    const surferposts = await new UserPost({
+      headline: headline,
+      location: location.toLowerCase(),
+      message: message,
+      createdBy: user._id,
+      level: level
+    }).save();
     if (surferposts) {
       res.status(201).json({
         success: true,
