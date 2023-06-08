@@ -2,6 +2,7 @@ import express from "express";
 const router = express.Router()
 import mongoose, { trusted } from "mongoose";
 import authenticateUser from "../Middlewares/middlewares";
+import usePagination from "../Middlewares/pagination"
 import User from '../Models/user';
 import UserPost from "../Models/surfpost";
 
@@ -10,9 +11,11 @@ mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.Promise = Promise;
 
 // Get all posts from all users
-router.get("/surfposts", async (req, res) => {
+router.get("/surfposts", usePagination, async (req, res) => {
   try {
     const { level, location, sort } = req.query
+    const { pageHits, startIndex } = req.pagination
+
     // create variables with the default sort values
     let sortByPropery = 'CreatedAt';
     let sortDirection = 'desc';
@@ -25,7 +28,10 @@ router.get("/surfposts", async (req, res) => {
       sortByPropery = 'numOfLikes';
       sortDirection = 'asc';
     }
-    let surferPosts = await UserPost.find().sort({ [sortByPropery]: sortDirection });
+    let surferPosts = await UserPost.find()
+      .sort({ [sortByPropery]: sortDirection })
+      .skip(startIndex)
+      .limit(pageHits);
 
     let filteredPosts = surferPosts;
 
@@ -82,10 +88,11 @@ router.post("/surfposts", authenticateUser, async (req, res) => {
 });
 
 // endpoint for user's posts
-router.get("/mysurfposts", authenticateUser, async (req, res) => {
+router.get("/mysurfposts", authenticateUser, usePagination, async (req, res) => {
   const accessToken = req.header("Authorization");
   try {
     const { sort } = req.query
+    const { pageHits, startIndex } = req.pagination
     // create variable with the default sort value
     let sortDirection = 'desc';
 
@@ -95,7 +102,10 @@ router.get("/mysurfposts", authenticateUser, async (req, res) => {
     }
 
     const user = await User.findOne({ accessToken: accessToken });
-    const mySurferPosts = await UserPost.find({ createdBy: user._id }).sort({ createdAt: sortDirection });
+    const mySurferPosts = await UserPost.find({ createdBy: user._id })
+      .sort({ createdAt: sortDirection })
+      .skip(startIndex)
+      .limit(pageHits);
 
     if (mySurferPosts.length) {
       res.status(200).json({
@@ -117,12 +127,17 @@ router.get("/mysurfposts", authenticateUser, async (req, res) => {
 });
 
 // endpoint for user's saved favourites
-router.get("/myfavsurfposts", authenticateUser, async (req, res) => {
+router.get("/myfavsurfposts", authenticateUser, usePagination, async (req, res) => {
   const accessToken = req.header("Authorization");
   try {
     const { location } = req.query;
+    const { startIndex, pageHits } = req.pagination
+
     const user = await User.findOne({ accessToken: accessToken });
-    const userFavPosts = await UserPost.find({ savedFavBy: user._id });
+    const userFavPosts = await UserPost.find({ savedFavBy: user._id })
+      .skip(startIndex)
+      .limit(pageHits);
+
     let filteredPosts = userFavPosts;
 
     if (location) {
