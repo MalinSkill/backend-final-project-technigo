@@ -39,7 +39,8 @@ router.get("/surfposts", usePagination, async (req, res) => {
       filteredPosts = filteredPosts.filter(post => post.level === level);
     }
     if (location) {
-      filteredPosts = filteredPosts.filter(post => post.location === location.toLowerCase());
+      const regex = new RegExp(location, 'i')
+      filteredPosts = filteredPosts.filter(post => regex.test(post.location));
     }
     res.status(200).json({
       success: true,
@@ -67,8 +68,8 @@ router.post("/surfposts", authenticateUser, async (req, res) => {
   try {
     const user = await User.findOne({ accessToken: accessToken });
     const surferposts = await new UserPost({
-      headline: headline,
-      location: location.toLowerCase(),
+      headline: headline.charAt(0).toUpperCase() + headline.slice(1).toLowerCase(),
+      location: location.charAt(0).toUpperCase() + location.slice(1).toLowerCase(),
       message: message,
       createdBy: user._id,
       level: level
