@@ -17,19 +17,19 @@ router.get("/surfposts", usePagination, async (req, res) => {
     const { pageHits, startIndex } = req.pagination
 
     // create variables with the default sort values
-    let sortByPropery = 'CreatedAt';
+    let sortByProperty = 'createdAt';
     let sortDirection = 'desc';
 
     // check if sort query parameter is provided 
     if (sort === 'likesDesc') {
-      sortByPropery = 'numOfLikes';
+      sortByProperty = 'numOfLikes';
       sortDirection = 'desc';
     } else if (sort === 'likesAsce') {
-      sortByPropery = 'numOfLikes';
+      sortByProperty = 'numOfLikes';
       sortDirection = 'asc';
     }
     let surferPosts = await UserPost.find()
-      .sort({ [sortByPropery]: sortDirection })
+      .sort({ [sortByProperty]: sortDirection })
       .skip(startIndex)
       .limit(pageHits);
 
