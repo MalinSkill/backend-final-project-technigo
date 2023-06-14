@@ -1,7 +1,7 @@
 const usePagination = async (req, res, next) => {
   const { page, size } = req.query;
   //if no size query is provided default is 20results shown on each page
-  const pageHits = size ? parseInt(size) : 20;
+  const pageHits = size ? parseInt(size) : 100;
   //if no page query is provided default is set to start at page 1
   const pageNumber = page ? parseInt(page) : 1;
   // Calculate the starting index for the current page
