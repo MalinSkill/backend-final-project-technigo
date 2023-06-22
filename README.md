@@ -25,34 +25,44 @@ Authenticated access for the user to like, save as favorite, edit and delete pos
 
 ## Endpoints/Routes
 /
+
 GET - Fetch all endpoints
 
 /register
+
 POST - Create a new user. Validation of unique username and email are performed
 
 /login
+
 POST - Authenticate the user
 
 /surfposts
+
 GET - Fetch all posts in the database, no authentication needed
 POST - Create new post, authenticated endpoint
 
 /surfposts/:surfPostID/like
+
 PATCH - To pull/push the user id for this specic post in the property likedByUser
 
 /surfposts/:surfPostID/addfav
+
 PATCH - To pull/push the user id for this specic post in the property savedFavByUser
 
 /surfposts/:surfPostID/delete
+
 DELETE - To delete the specific post, can be done by the authenticated user that created the post
 
 /surfposts/:surfPostID/update
+
 PATCH - To edit posts, can be done by the authenticated user that created the post
 
 /mysurfposts
+
 GET - Fetch all posts by the authenticated user
 
 /myfavsurfposts
+
 GET - Fetch all posts saved as favourite by the authenticated user
 
 [API Deployed on Google Cloud](https://backend-final-project-technigo-ognztdcbaq-no.a.run.app/)
